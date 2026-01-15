@@ -1,0 +1,82 @@
+-- Script de Criação do Data Mart - SQL Server
+
+-- Remover tabelas existentes
+IF OBJECT_ID('fato_viagem', 'U') IS NOT NULL DROP TABLE fato_viagem;
+IF OBJECT_ID('dim_data', 'U') IS NOT NULL DROP TABLE dim_data;
+IF OBJECT_ID('dim_barco', 'U') IS NOT NULL DROP TABLE dim_barco;
+IF OBJECT_ID('dim_condutor', 'U') IS NOT NULL DROP TABLE dim_condutor;
+IF OBJECT_ID('dim_localizacao', 'U') IS NOT NULL DROP TABLE dim_localizacao;
+GO
+
+-- 1. Dimensão Data
+CREATE TABLE dim_data (
+    id_data     INT PRIMARY KEY,
+    data        DATE,
+    ano         INT,
+    mes         INT,
+    dia         INT,
+    nome_mes    NVARCHAR(20),
+    trimestre   INT,
+    semestre    INT
+);
+GO
+
+-- 2. Dimensão Barco
+CREATE TABLE dim_barco (
+    id_barco       INT IDENTITY(1,1) PRIMARY KEY,
+    nome_barco     NVARCHAR(200),
+    tipo_barco     NVARCHAR(100),
+    empresa_barco  NVARCHAR(200),
+    tamanho        INT
+);
+GO
+
+-- 3. Dimensão Condutor
+CREATE TABLE dim_condutor (
+    id_condutor    INT IDENTITY(1,1) PRIMARY KEY,
+    nome_condutor  NVARCHAR(200),
+    certificacao   NVARCHAR(100),
+    idade          INT,
+    genero         CHAR(1)  -- Otimizado
+);
+GO
+
+-- 4. Dimensão Localização
+CREATE TABLE dim_localizacao (
+    id_localizacao INT IDENTITY(1,1) PRIMARY KEY,
+    nome_porto     NVARCHAR(200),
+    cidade         NVARCHAR(200),
+    pais           NVARCHAR(200)
+);
+GO
+
+-- 5. Tabela de Factos
+CREATE TABLE fato_viagem (
+    id_viagem                   BIGINT PRIMARY KEY,
+    receita_taxas               DECIMAL(18,2),
+    num_contentores             INT,
+    peso_total_contentores      FLOAT,
+    duracao_viagem              INT,
+    teu_total                   FLOAT,
+    tipo_viagem                 NVARCHAR(100),
+
+    dim_localizacao_id_localizacao INT NOT NULL,
+    dim_condutor_id_condutor       INT NOT NULL,
+    dim_barco_id_barco             INT NOT NULL,
+    dim_data_id_data               INT NOT NULL
+);
+GO
+
+-- 6. Relações
+ALTER TABLE fato_viagem ADD CONSTRAINT fk_fato_localizacao 
+    FOREIGN KEY (dim_localizacao_id_localizacao) REFERENCES dim_localizacao(id_localizacao);
+
+ALTER TABLE fato_viagem ADD CONSTRAINT fk_fato_condutor 
+    FOREIGN KEY (dim_condutor_id_condutor) REFERENCES dim_condutor(id_condutor);
+
+ALTER TABLE fato_viagem ADD CONSTRAINT fk_fato_barco 
+    FOREIGN KEY (dim_barco_id_barco) REFERENCES dim_barco(id_barco);
+
+ALTER TABLE fato_viagem ADD CONSTRAINT fk_fato_data 
+    FOREIGN KEY (dim_data_id_data) REFERENCES dim_data(id_data);
+GO
